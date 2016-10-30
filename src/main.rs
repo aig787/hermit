@@ -151,13 +151,17 @@ fn handle_init<C: Config>(matches: &ArgMatches,
 
 
 subcommand!(nuke, add_nuke_subcommand {
-    about("Permanently remove a hermit shell")
+    about("Permanently remove a hermit shell");
+    arg(Arg::with_name("SHELL_NAME").help("The name of the shell to be destroyed."))
 });
 
-fn handle_nuke<C: Config>(_matches: &ArgMatches,
-                          _hermit: &mut Hermit<C>,
-                          _file_operations: &mut FileOperations) {
-    println!("hermit nuke is not implemented yet.")
+fn handle_nuke<C: Config>(matches: &ArgMatches,
+                          hermit: &mut Hermit<C>,
+                          file_operations: &mut FileOperations) {
+    match matches.value_of("SHELL_NAME") {
+        None => println!("No hermit shell specified!"),
+        Some(shell_name) => println!("I EXIST")
+    }
 }
 
 

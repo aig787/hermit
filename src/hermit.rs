@@ -51,7 +51,17 @@ impl<T: Config> Hermit<T> {
     pub fn init_shell(&self, file_ops: &mut FileOperations, name: &str) {
         let new_shell = Shell::new(name, self.config.clone());
         let path = new_shell.root_path();
+        println!("creating {}", path.to_str().unwrap());
         file_ops.create_git_repo(path);
+    }
+
+    pub fn nuke_shell(&self, file_ops: &mut FileOperations, name: &str) -> Result<(), Error>  {
+        println!("========={}===========", self.config.shell_root_path().join(name).to_str().unwrap());
+        if (!self.config.does_shell_exist(name)) {
+            return Err(Error::ShellDoesNotExist);
+        }
+        let shell_path = self.config.shell_root_path().join(name);
+        Ok(())
     }
 }
 
@@ -124,5 +134,39 @@ mod tests {
         let first_op = &file_ops.operations[0];
         assert_eq!(*first_op,
                    Op::GitInit(PathBuf::from("/home/geoff/.hermit-config/shells/new-one")));
+    }
+
+    #[test]
+    fn does_not_delete_nonexistent_shell() {
+        let config = mock_config();
+        let mut hermit = hermit(&config);
+        let mut file_ops = FileOperations::rooted_at("/home/agriffin");
+
+        let res = hermit.nuke_shell(&mut file_ops, "non-existent");
+        assert!(res.is_err());
+        assert_eq!(res.err().unwrap(), Error::ShellDoesNotExist);
+    }
+
+    #[test]
+    fn can_delete_shell() {
+        let config = MockConfig {
+            root_path: PathBuf::from(".hermit-config"),
+            allowed_shell_names: vec!["default".to_owned()],
+            current_shell: "default".to_owned(),
+        };
+        let mut hermit = hermit(&config);
+        let test_root = set_up("git-re-init");
+        let mut file_ops_init = FileOperations::rooted_at(&test_root);
+
+        let mut file_ops_init = FileOperations::rooted_at("/home/agriffin");
+
+        hermit.init_shell(&mut file_ops_init, "new-one");
+        let init_res = file_ops_init.commit();
+        println!("OUTPUT");
+
+        let mut file_ops = FileOperations::rooted_at("hom");
+        let res = hermit.nuke_shell(&mut file_ops, "new-one");
+        println!("error {:?}", res.err());
+        assert!(!res.is_err())
     }
 }
